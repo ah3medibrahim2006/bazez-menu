@@ -40,6 +40,8 @@
     }
   }
 
+  const openOrders=document.getElementById('openOrdersShortcut'); if(openOrders)openOrders.onclick=()=>document.querySelector('[data-admin="ordersAdmin"]')?.click();
+
   function statusActions(order) {
     const choices = {
       'جديد': [['قبول','مقبول'],['رفض','مرفوض']],
