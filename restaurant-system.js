@@ -40,7 +40,7 @@
     }
   }
 
-  const openOrders=document.getElementById('openOrdersShortcut'); if(openOrders)openOrders.onclick=()=>document.querySelector('[data-admin="ordersAdmin"]')?.click();
+  const manageOrders=document.getElementById('manageOrdersShortcut'); if(manageOrders)manageOrders.onclick=()=>document.querySelector('[data-admin="ordersAdmin"]')?.click();
 
   function statusActions(order) {
     const choices = {
