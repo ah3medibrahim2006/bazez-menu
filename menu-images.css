@@ -90,7 +90,7 @@
   flex: 0 1 60%;
   width: 60%;
   max-width: 660px;
-  aspect-ratio: 2 / 1;
+  height: clamp(100px, 28vw, 338px);
   object-fit: contain;
   border: 2px solid #fff;
   border-radius: 18px;
