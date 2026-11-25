@@ -90,7 +90,7 @@
     document.getElementById('statOrders').textContent=orders.filter(o=>!['مكتمل','مرفوض'].includes(o.status)).length;
     document.getElementById('adminOrdersList').innerHTML=orders.filter(o=>!['مكتمل','مرفوض'].includes(o.status)).map(o=>orderCard(o,true)).join('')||'<p class="muted">لا توجد طلبات نشطة.</p>';
     document.getElementById('kitchenOrdersList').innerHTML=orders.filter(o=>['جديد','مقبول','قيد التحضير'].includes(o.status)).map(o=>orderCard(o,true)).join('')||'<p class="muted">لا توجد طلبات للمطبخ الآن.</p>';
-    if(status&&Notification.permission==='granted')status.textContent='الإدارة متصلة. الطلبات تظهر هنا مباشرة، وحالات المطبخ تتحدث تلقائياً.';
+    if(status&&('Notification' in window)&&Notification.permission==='granted')status.textContent='الإدارة متصلة. الطلبات تظهر هنا مباشرة، وحالات المطبخ تتحدث تلقائياً.';
     if(!baselineLoaded){orders.forEach(o=>seenOrderIds.add(o.id));baselineLoaded=true;}
   };
 
