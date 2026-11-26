@@ -131,6 +131,9 @@
 .admin-price-eye{padding:5px 8px;white-space:nowrap}
 .admin-price-input{width:100%;min-width:0}
 .admin-save-prices{grid-column:1/-1;justify-self:start}
+.admin-base-price{display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;margin:8px 0;padding:10px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.admin-base-price label{font-weight:bold}
+.admin-base-price input{width:130px;max-width:100%}
 
 .admin-item-title{border:0;background:transparent;padding:0;color:var(--ink);font:inherit;font-weight:bold;text-align:right;cursor:pointer}.admin-item-title:hover{text-decoration:underline;color:var(--red)}
 
