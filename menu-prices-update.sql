@@ -1,41 +1,60 @@
--- BAZEZ menu price and missing item update
--- Run once in the Supabase SQL Editor after the base menu_items table is installed.
+begin;
 
--- Give every currently unpriced option the requested default price.
+-- Set every missing item or option price to 100 EGP.
 update public.menu_items m
-set options = coalesce((
-  select jsonb_agg(
-    case when opt->>'price' is null or opt->'price' = 'null'::jsonb
-      then jsonb_set(opt, '{price}', '100'::jsonb, true)
-      else opt end
-    order by ordinality
-  )
-  from jsonb_array_elements(coalesce(m.options, '[]'::jsonb)) with ordinality as e(opt, ordinality)
-), '[]'::jsonb),
-start_price = coalesce(m.start_price, 100)
+set start_price = coalesce(m.start_price, 100),
+    options = case
+      when m.category = 'السندوتشات' and m.name = 'شاورما فراخ' then
+        jsonb_build_array(
+          jsonb_build_object('label', 'سوري', 'price', 100),
+          jsonb_build_object('label', 'فرنساوي', 'price', 100),
+          jsonb_build_object('label', 'فينو', 'price', 100)
+        )
+      else coalesce((
+        select jsonb_agg(
+          case
+            when o->>'price' is null or o->'price' = 'null'::jsonb
+              then jsonb_set(o, '{price}', '100'::jsonb, true)
+            else o
+          end order by ordinality
+        )
+        from jsonb_array_elements(coalesce(m.options, '[]'::jsonb))
+          with ordinality as option_rows(o, ordinality)
+      ), '[]'::jsonb)
+    end
 where m.start_price is null
-   or exists (select 1 from jsonb_array_elements(coalesce(m.options, '[]'::jsonb)) opt
-              where opt->>'price' is null or opt->'price' = 'null'::jsonb);
+   or (m.category = 'السندوتشات' and m.name = 'شاورما فراخ')
+   or exists (
+     select 1
+     from jsonb_array_elements(coalesce(m.options, '[]'::jsonb)) o
+     where o->>'price' is null or o->'price' = 'null'::jsonb
+   );
 
--- Add menu entries that are missing from the database. IDs use the table's normal sequence.
-do $$
-declare
-  v_item record;
-begin
-  for v_item in
-    select * from (values
-      ('كريبات', 'كفتة', 'كفتة + خضروات وموتزاريلا.', '[{"label":"عادي","price":100}]'::jsonb),
-      ('السندوتشات', 'شاورما فراخ', 'شاورما فراخ. اختر نوع العيش: فينو أو فرنساوي أو سوري.', '[{"label":"سوري","price":100},{"label":"فرنساوي","price":100},{"label":"فينو","price":100}]'::jsonb),
-      ('بيتزا إيطالي', 'فراخ', 'فراخ.', '[{"label":"عادي","price":100}]'::jsonb),
-      ('بيتزا شرقي', 'فراخ', 'فراخ.', '[{"label":"عادي","price":100}]'::jsonb),
-      ('فطير حادق', 'فطيرة كيري سجق', 'سجق مع جبنة كيري.', '[{"label":"عادي","price":100}]'::jsonb),
-      ('الطاسات', 'برجر طاسة', 'برجر + ميكس جبن.', '[{"label":"عادي","price":100}]'::jsonb)
-    ) as additions(category, name, ingredients, options)
-  loop
-    if not exists (select 1 from public.menu_items m where m.category=v_item.category and m.name=v_item.name) then
-      insert into public.menu_items(category, name, start_price, ingredients, stock, visible, options)
-      values(v_item.category, v_item.name, 100, v_item.ingredients, 10, true, v_item.options);
-    end if;
-  end loop;
-end $$;
+-- Add menu entries missing from the database with the next IDs used by the menu.
+with additions(sort_order, category, name, ingredients, options) as (
+  values
+    (3, 'بيتزا إيطالي', 'فراخ', 'فراخ.',
+      '[{"label":"عادي","price":100}]'::jsonb),
+    (4, 'بيتزا شرقي', 'فراخ', 'فراخ.',
+      '[{"label":"عادي","price":100}]'::jsonb),
+    (5, 'فطير حادق', 'فطيرة كيري سجق', 'سجق مع جبنة كيري.',
+      '[{"label":"عادي","price":100}]'::jsonb)
+),
+missing as (
+  select a.*, row_number() over (order by a.sort_order) as sequence_number
+  from additions a
+  where not exists (
+    select 1 from public.menu_items m
+    where m.category = a.category and m.name = a.name
+  )
+),
+next_id as (
+  select coalesce(max(id), 0) as id from public.menu_items
+)
+insert into public.menu_items(id, category, name, start_price, ingredients, visible, options)
+select next_id.id + missing.sequence_number, missing.category, missing.name, 100,
+       missing.ingredients, true, missing.options
+from missing cross join next_id
+order by missing.sort_order;
 
+commit;
