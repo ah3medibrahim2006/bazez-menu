@@ -60,6 +60,14 @@
   display: none;
 }
 
+.gallery-card.feature-card {
+  aspect-ratio: 2 / 1;
+}
+
+.gallery-card.feature-card img {
+  object-fit: contain;
+}
+
 .menu-heading {
   gap: 14px;
   min-height: 150px;
