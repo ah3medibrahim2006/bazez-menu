@@ -163,15 +163,23 @@ function enrichMenuItem(item) {
 
 const MENU_ADDITIONS = [
   { id: 163, cat: 'كريبات', name: 'كفتة', ingredients: 'كفتة + خضروات وموتزاريلا.' },
-  { id: 164, cat: 'السندوتشات', name: 'شاورما فراخ', ingredients: 'شاورما فراخ.', options: [{ label: 'عادي', price: null }] },
+  { id: 164, cat: 'السندوتشات', name: 'شاورما فراخ', ingredients: 'شاورما فراخ.', startPrice: 100, options: [{ label: 'سوري', price: 100 }, { label: 'فرنساوي', price: 100 }, { label: 'فينو', price: 100 }] },
   { id: 165, cat: 'بيتزا إيطالي', name: 'فراخ', ingredients: 'فراخ.' },
   { id: 166, cat: 'بيتزا شرقي', name: 'فراخ', ingredients: 'فراخ.' },
   { id: 167, cat: 'فطير حادق', name: 'فطيرة كيري سجق', ingredients: 'سجق مع جبنة كيري.' },
   { id: 168, cat: 'الطاسات', name: 'برجر طاسة', ingredients: 'برجر + ميكس جبن.' },
-].map(item => ({ visible: true, stock: 10, startPrice: null, options: [{ label: 'السعر يحدد', price: null }], ...item }));
+].map(item => ({ visible: true, stock: 10, startPrice: 100, options: [{ label: 'عادي', price: 100 }], ...item }));
+
+function priceMissingMenuItems(list) {
+  return list.map(item => {
+    const options = (item.options?.length ? item.options : [{ label: 'عادي', price: item.startPrice }])
+      .map(option => ({ ...option, price: option.price == null ? 100 : Number(option.price) }));
+    return { ...item, startPrice: item.startPrice == null ? 100 : Number(item.startPrice), options };
+  });
+}
 
 function completeMenu(list) {
-  const items = list;
+  const items = priceMissingMenuItems(list);
   for (const item of items) {
     if (String(item.cat || '').trim() === 'السندوتشات' && String(item.name || '').trim() === 'استربس' && Array.isArray(item.options)) {
       item.options = item.options.slice(0, 3);
