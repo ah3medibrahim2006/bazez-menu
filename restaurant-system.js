@@ -58,9 +58,14 @@
     return (choices[order.status]||[]).map(([label,next])=>'<button class="soft" type="button" onclick="changeOrderStatus(\''+String(order.id).replace(/'/g,'')+'\',\''+next+'\')">'+label+'</button>').join('');
   }
   function orderCard(order, showActions) {
-    const date=new Date(order.created_at).toLocaleString('ar-EG');
+    const date=new Intl.DateTimeFormat('ar-EG',{timeZone:'Africa/Cairo',hour:'numeric',minute:'2-digit'}).format(new Date(order.created_at));
     return '<article class="order-card"><div class="order-head"><b>'+esc(order.code)+' — '+esc(order.customer)+'</b><span class="status-chip">'+esc(customerStatusLabel(order.status,order.order_type))+'</span></div><div class="muted">'+esc(order.phone)+' • '+esc(order.branch)+' • '+esc(order.order_type)+' • '+esc(order.payment)+'</div><div>'+esc(order.summary)+'</div><div class="row"><b>'+Number(order.total).toFixed(0)+' ج.م</b><span class="muted">'+date+'</span></div>'+(order.address?'<div class="muted">العنوان: '+esc(order.address)+'</div>':'')+(showActions?'<div class="order-actions">'+statusActions(order)+'</div>':'')+'</article>';
   }
+
+  function cairoDayKey(value){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(value));const part=key=>parts.find(x=>x.type===key)?.value||'00';return part('year')+'-'+part('month')+'-'+part('day')}
+  function cairoDayLabel(value){return new Intl.DateTimeFormat('ar-EG',{timeZone:'Africa/Cairo',weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(new Date(value))}
+  function ordersByDay(list,showActions){const sorted=[...list].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)),groups=new Map();for(const order of sorted){const key=cairoDayKey(order.created_at);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(order)}return [...groups.values()].map(dayOrders=>'<section class="order-day-group"><h3 class="order-day-heading">'+esc(cairoDayLabel(dayOrders[0].created_at))+'</h3>'+dayOrders.map(order=>orderCard(order,showActions)).join('')+'</section>').join('')||'<p class="muted">لا توجد طلبات مسجلة.</p>'}
+  async function fetchAllOrders(){const pageSize=1000;let all=[],offset=0;while(true){const {data,error}=await db.from('orders').select('*').order('created_at',{ascending:false}).range(offset,offset+pageSize-1);if(error)return{data:null,error};const page=data||[];all.push(...page);if(page.length<pageSize)break;offset+=pageSize}return{data:all,error:null}}
 
   window.changeOrderStatus = async (id,status) => {
     const {error}=await db.rpc('set_order_status',{p_order_id:id,p_status:status});
@@ -89,11 +94,11 @@
     const status=document.getElementById('notificationStatus');
     const {data:isAdmin,error:roleError}=await db.rpc('is_bazez_admin');
     if(roleError||isAdmin!==true){if(status)status.textContent='حساب الدخول غير مضاف كمسؤول في Supabase. أضفه إلى public.admin_users لعرض الطلبات وإدارتها.';return;}
-    const {data:list,error}=await db.from('orders').select('*').order('created_at',{ascending:false}).limit(100);
+    const {data:list,error}=await fetchAllOrders();
     if(error){if(status)status.textContent='تعذر تحميل الطلبات: '+error.message;return;}
     orders=list||[];
-    document.getElementById('statOrders').textContent=orders.filter(o=>!['مكتمل','مرفوض'].includes(o.status)).length;
-    document.getElementById('adminOrdersList').innerHTML=orders.filter(o=>!['مكتمل','مرفوض'].includes(o.status)).map(o=>orderCard(o,true)).join('')||'<p class="muted">لا توجد طلبات نشطة.</p>';
+    document.getElementById('statOrders').textContent=orders.length;
+    document.getElementById('adminOrdersList').innerHTML=ordersByDay(orders,true);
     document.getElementById('kitchenOrdersList').innerHTML=orders.filter(o=>['جديد','مقبول','قيد التحضير'].includes(o.status)).map(o=>orderCard(o,true)).join('')||'<p class="muted">لا توجد طلبات للمطبخ الآن.</p>';
     if(status&&('Notification' in window)&&Notification.permission==='granted')status.textContent='الإدارة متصلة. الطلبات تظهر هنا مباشرة، وحالات المطبخ تتحدث تلقائياً.';
     if(!baselineLoaded){orders.forEach(o=>seenOrderIds.add(o.id));baselineLoaded=true;}
