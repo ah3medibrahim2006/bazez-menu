@@ -135,3 +135,5 @@
 .admin-item-title{border:0;background:transparent;padding:0;color:var(--ink);font:inherit;font-weight:bold;text-align:right;cursor:pointer}.admin-item-title:hover{text-decoration:underline;color:var(--red)}
 
 .order-day-group{padding:8px 0;border-bottom:1px solid var(--line)}.order-day-group:last-child{border-bottom:0}.order-day-heading{margin:8px 0;padding:10px 12px;background:var(--soft);color:var(--red);border-radius:10px;font-size:18px}
+
+.customer-delivery-confirm{margin-top:8px;min-width:150px}
