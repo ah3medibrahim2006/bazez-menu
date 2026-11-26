@@ -30,11 +30,17 @@ where m.start_price is null
      where o->>'price' is null or o->'price' = 'null'::jsonb
    );
 
+-- Keep the Italian chicken pizza size prices from the current menu.
+update public.menu_items
+set start_price = 100,
+    options = '[{"label":"S","price":100},{"label":"M","price":145},{"label":"L","price":210}]'::jsonb
+where category = 'بيتزا إيطالي' and name = 'بيتزا فراخ ايطالي';
+
 -- Add menu entries missing from the database with the next IDs used by the menu.
 with additions(sort_order, category, name, ingredients, options) as (
   values
-    (3, 'بيتزا إيطالي', 'فراخ', 'فراخ.',
-      '[{"label":"عادي","price":100}]'::jsonb),
+    (3, 'بيتزا إيطالي', 'بيتزا فراخ ايطالي', 'فراخ.',
+      '[{"label":"S","price":100},{"label":"M","price":145},{"label":"L","price":210}]'::jsonb),
     (4, 'بيتزا شرقي', 'فراخ', 'فراخ.',
       '[{"label":"عادي","price":100}]'::jsonb),
     (5, 'فطير حادق', 'فطيرة كيري سجق', 'سجق مع جبنة كيري.',

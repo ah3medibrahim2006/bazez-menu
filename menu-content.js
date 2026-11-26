@@ -163,8 +163,8 @@ function enrichMenuItem(item) {
 
 const MENU_ADDITIONS = [
   { id: 163, cat: 'كريبات', name: 'كفتة', ingredients: 'كفتة + خضروات وموتزاريلا.' },
-  { id: 164, cat: 'السندوتشات', name: 'شاورما فراخ', ingredients: 'شاورما فراخ.', startPrice: 100, options: [{ label: 'سوري', price: 100 }, { label: 'فرنساوي', price: 100 }, { label: 'فينو', price: 100 }] },
-  { id: 165, cat: 'بيتزا إيطالي', name: 'فراخ', ingredients: 'فراخ.' },
+  { id: 164, cat: 'السندوتشات', name: 'شاورما فراخ', ingredients: 'شاورما فراخ. اختر نوع العيش: فينو أو فرنساوي أو سوري.', startPrice: 100, options: [{ label: 'سوري', price: 100 }, { label: 'فرنساوي', price: 100 }, { label: 'فينو', price: 100 }] },
+  { id: 165, cat: 'بيتزا إيطالي', name: 'بيتزا فراخ ايطالي', ingredients: 'فراخ.', options: [{ label: 'S', price: 100 }, { label: 'M', price: 145 }, { label: 'L', price: 210 }] },
   { id: 166, cat: 'بيتزا شرقي', name: 'فراخ', ingredients: 'فراخ.' },
   { id: 167, cat: 'فطير حادق', name: 'فطيرة كيري سجق', ingredients: 'سجق مع جبنة كيري.' },
   { id: 168, cat: 'الطاسات', name: 'برجر طاسة', ingredients: 'برجر + ميكس جبن.' },
@@ -180,11 +180,6 @@ function priceMissingMenuItems(list) {
 
 function completeMenu(list) {
   const items = priceMissingMenuItems(list);
-  for (const item of items) {
-    if (String(item.cat || '').trim() === 'السندوتشات' && String(item.name || '').trim() === 'استربس' && Array.isArray(item.options)) {
-      item.options = item.options.slice(0, 3);
-    }
-  }
   let id = Math.max(162, ...items.map(item => Number(item.id) || 0));
   for (const addition of MENU_ADDITIONS) {
     if (!items.some(item => item.cat === addition.cat && item.name === addition.name)) {
