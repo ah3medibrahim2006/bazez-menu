@@ -163,7 +163,7 @@ function enrichMenuItem(item) {
 
 const MENU_ADDITIONS = [
   { id: 163, cat: 'كريبات', name: 'كفتة', ingredients: 'كفتة + خضروات وموتزاريلا.' },
-  { id: 164, cat: 'السندوتشات', name: 'شاورما فراخ', ingredients: 'شاورما فراخ. اختر نوع العيش: فينو أو فرنساوي أو سوري.', options: [{ label: 'سوري', price: null }, { label: 'فرنساوي', price: null }, { label: 'فينو', price: null }] },
+  { id: 164, cat: 'السندوتشات', name: 'شاورما فراخ', ingredients: 'شاورما فراخ.', options: [{ label: 'عادي', price: null }] },
   { id: 165, cat: 'بيتزا إيطالي', name: 'فراخ', ingredients: 'فراخ.' },
   { id: 166, cat: 'بيتزا شرقي', name: 'فراخ', ingredients: 'فراخ.' },
   { id: 167, cat: 'فطير حادق', name: 'فطيرة كيري سجق', ingredients: 'سجق مع جبنة كيري.' },
