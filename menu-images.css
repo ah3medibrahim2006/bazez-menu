@@ -131,3 +131,5 @@
 .admin-price-eye{padding:5px 8px;white-space:nowrap}
 .admin-price-input{width:100%;min-width:0}
 .admin-save-prices{grid-column:1/-1;justify-self:start}
+
+.admin-item-title{border:0;background:transparent;padding:0;color:var(--ink);font:inherit;font-weight:bold;text-align:right;cursor:pointer}.admin-item-title:hover{text-decoration:underline;color:var(--red)}

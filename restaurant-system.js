@@ -37,7 +37,7 @@
         });
         nav.querySelector('[data-admin=ordersAdmin]')?.classList.add('active');
         nav.querySelector('[data-admin=inventory]')?.classList.remove('active');
-        nav.querySelectorAll('[data-admin]').forEach(button=>button.onclick=()=>{nav.querySelectorAll('[data-admin]').forEach(x=>x.classList.toggle('active',x===button));['ordersAdmin','kitchenAdmin','inventory','settings'].forEach(view=>{const el=document.getElementById(view);if(el)el.classList.toggle('hidden',view!==button.dataset.admin)});});
+        nav.querySelectorAll('[data-admin]').forEach(button=>button.onclick=()=>{nav.querySelectorAll('[data-admin]').forEach(x=>x.classList.toggle('active',x===button));document.getElementById('adminOverview')?.classList.add('hidden');['ordersAdmin','kitchenAdmin','inventory','settings'].forEach(view=>{const el=document.getElementById(view);if(el)el.classList.toggle('hidden',view!==button.dataset.admin)});});
       }
       const refresh=document.getElementById('refreshOrders'); if(refresh)refresh.onclick=()=>renderAdmin();
     }
