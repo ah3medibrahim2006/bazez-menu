@@ -172,6 +172,16 @@ const MENU_ADDITIONS = [
 
 function completeMenu(list) {
   const items = list;
+  for (const item of items) {
+    if (item.cat === 'السندوتشات' && item.name === 'استربس' && Array.isArray(item.options)) {
+      const seen = new Set();
+      item.options = item.options.filter(option => {
+        if (seen.has(option.label)) return false;
+        seen.add(option.label);
+        return true;
+      });
+    }
+  }
   let id = Math.max(162, ...items.map(item => Number(item.id) || 0));
   for (const addition of MENU_ADDITIONS) {
     if (!items.some(item => item.cat === addition.cat && item.name === addition.name)) {
