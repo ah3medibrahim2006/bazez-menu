@@ -1,15 +1,18 @@
 (() => {
-  const style = document.createElement('style'); style.textContent='.admin-tabs{position:static!important;transform:none!important;width:auto!important;justify-content:flex-start!important;box-shadow:none!important;border:0!important;padding:8px 0!important;background:transparent!important}.admin-tabs .btn{flex:0 1 auto!important;display:inline-flex!important;flex-direction:row!important;width:auto!important} .order-card{padding:12px 0;border-bottom:1px solid var(--line)}.order-card:last-child{border-bottom:0}.order-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.status-chip{display:inline-block;background:var(--soft);color:var(--red);border-radius:20px;padding:4px 9px;font-size:13px}.order-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}'; document.head.appendChild(style);
+  const style = document.createElement('style'); style.textContent='.admin-tabs{position:static!important;transform:none!important;width:auto!important;justify-content:flex-start!important;box-shadow:none!important;border:0!important;padding:8px 0!important;background:transparent!important}.admin-tabs .btn{flex:0 1 auto!important;display:inline-flex!important;flex-direction:row!important;width:auto!important} .order-card{padding:12px 0;border-bottom:1px solid var(--line)}.order-card:last-child{border-bottom:0}.order-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.status-chip{display:inline-block;background:var(--soft);color:var(--red);border-radius:20px;padding:4px 9px;font-size:13px}.order-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.order-progress{list-style:none;padding:0;margin:12px 0;display:grid;gap:7px}.order-progress li{display:flex;align-items:center;gap:8px;color:var(--muted)}.order-progress li:before{content:"•";display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#eee;color:#777;font-weight:bold}.order-progress li.done,.order-progress li.current{color:var(--ink);font-weight:bold}.order-progress li.done:before,.order-progress li.current:before{content:"✓";background:#b4232e;color:#fff}.order-rejected{margin:12px 0;padding:10px;border-radius:10px;background:#fff0f0;color:#a31522;font-weight:bold}.notify-customer{margin:10px 0}'; document.head.appendChild(style);
   let seenOrderIds = new Set();
   let baselineLoaded = false;
   let pollingOrders = false;
+  let pollingCustomerOrders = false;
+  let trackedOrderCode = '';
+  const knownCustomerStatuses = new Map();
 
   function ensureOrderUi() {
     const tracking = document.getElementById('orders');
     if (tracking && !document.getElementById('trackOrderForm')) {
       const card = document.createElement('div');
       card.className = 'card';
-      card.innerHTML = '<h2>تابع طلبك</h2><p class="muted">اكتب رقم الطلب الموجود في رسالة التأكيد.</p><form id="trackOrderForm" class="row"><input id="trackOrderCode" placeholder="مثال: BZ12345678" required><button class="primary">عرض حالة الطلب</button></form><div id="trackingResult" aria-live="polite"></div>';
+      card.innerHTML = '<h2>تابع طلبك</h2><p class="muted">اكتب رقم الطلب الموجود في رسالة التأكيد، أو افتح «طلباتي» لمتابعة الطلبات من هذا الجهاز.</p><form id="trackOrderForm" class="row"><input id="trackOrderCode" placeholder="مثال: BZ12345678" required><button class="primary">عرض حالة الطلب</button></form><button class="soft notify-customer" type="button" onclick="enableCustomerOrderNotifications()">فعّل إشعارات حالة الطلب على هذا الجهاز</button><p class="muted">التنبيهات تظهر بعد السماح بها مع إبقاء صفحة الموقع مفتوحة.</p><div id="trackingResult" aria-live="polite"></div>';
       tracking.prepend(card);
     }
     const panel = document.getElementById('adminPanel');
@@ -40,13 +43,15 @@
     }
   }
 
+  ensureOrderUi();
+
   const openOrders=document.getElementById('openOrdersShortcut'); if(openOrders)openOrders.onclick=()=>document.querySelector('[data-admin="ordersAdmin"]')?.click();
 
   function statusActions(order) {
     const choices = {
       'جديد': [['قبول','مقبول'],['رفض','مرفوض']],
       'مقبول': [['بدء التحضير','قيد التحضير'],['رفض','مرفوض']],
-      'قيد التحضير': order.order_type==='توصيل' ? [['جاهز','جاهز'],['خرج للتوصيل','خرج للتوصيل']] : [['جاهز للاستلام','جاهز']],
+      'قيد التحضير': order.order_type==='توصيل' ? [['تم التجهيز وإرسال الطلب للدليفري','خرج للتوصيل']] : [['جاهز للاستلام','جاهز']],
       'جاهز': [['تم التسليم','مكتمل']],
       'خرج للتوصيل': [['تم التسليم','مكتمل']]
     };
@@ -54,7 +59,7 @@
   }
   function orderCard(order, showActions) {
     const date=new Date(order.created_at).toLocaleString('ar-EG');
-    return '<article class="order-card"><div class="order-head"><b>'+esc(order.code)+' — '+esc(order.customer)+'</b><span class="status-chip">'+esc(order.status)+'</span></div><div class="muted">'+esc(order.phone)+' • '+esc(order.branch)+' • '+esc(order.order_type)+' • '+esc(order.payment)+'</div><div>'+esc(order.summary)+'</div><div class="row"><b>'+Number(order.total).toFixed(0)+' ج.م</b><span class="muted">'+date+'</span></div>'+(order.address?'<div class="muted">العنوان: '+esc(order.address)+'</div>':'')+(showActions?'<div class="order-actions">'+statusActions(order)+'</div>':'')+'</article>';
+    return '<article class="order-card"><div class="order-head"><b>'+esc(order.code)+' — '+esc(order.customer)+'</b><span class="status-chip">'+esc(customerStatusLabel(order.status,order.order_type))+'</span></div><div class="muted">'+esc(order.phone)+' • '+esc(order.branch)+' • '+esc(order.order_type)+' • '+esc(order.payment)+'</div><div>'+esc(order.summary)+'</div><div class="row"><b>'+Number(order.total).toFixed(0)+' ج.م</b><span class="muted">'+date+'</span></div>'+(order.address?'<div class="muted">العنوان: '+esc(order.address)+'</div>':'')+(showActions?'<div class="order-actions">'+statusActions(order)+'</div>':'')+'</article>';
   }
 
   window.changeOrderStatus = async (id,status) => {
@@ -63,21 +68,19 @@
     toast('حالة الطلب أصبحت: '+status); await renderAdmin();
   };
 
-  window.renderOrders = async function() {
-    const local=JSON.parse(sessionStorage.getItem('bz-orders')||'[]');
-    const list=document.getElementById('ordersList');
-    if(list)list.innerHTML=local.map(o=>'<div class="order"><b>'+esc(o.code)+' — '+esc(o.status)+'</b><div class="muted">'+esc(o.customer)+' • '+esc(o.branch)+'</div><div>'+esc(o.summary)+' — '+o.total+' ج.م</div></div>').join('')||'<p class="muted">لا توجد طلبات من هذا الجهاز.</p>';
-  };
+  function customerStatusLabel(status,orderType){return ({'جديد':'تم استلام الطلب','مقبول':'تم قبول الطلب','قيد التحضير':'جاري تجهيز الطلب','جاهز':orderType==='توصيل'?'تم التجهيز':'جاهز للاستلام','خرج للتوصيل':'تم إرساله للدليفري','مكتمل':'تم التسليم','مرفوض':'تم رفض الطلب'})[status]||status||'جاري تحديث الحالة'}
+  function customerProgress(order){if(order.status==='مرفوض')return '<div class="order-rejected">تم رفض الطلب. تواصل مع الفرع لمعرفة التفاصيل.</div>';const delivery=order.order_type==='توصيل',steps=[['جديد','تم استلام الطلب'],['مقبول','تم قبول الطلب'],['قيد التحضير','جاري تجهيز الطلب']];if(delivery)steps.push(['جاهز','تم التجهيز']);else steps.push(['جاهز','جاهز للاستلام']);if(delivery)steps.push(['خرج للتوصيل','تم إرساله للدليفري']);steps.push(['مكتمل',delivery?'تم التوصيل':'تم التسليم']);const active=steps.findIndex(([status])=>status===order.status);return '<ol class="order-progress">'+steps.map(([status,label],index)=>'<li class="'+(active>=0&&index<active?'done':index===active?'current':'')+'">'+label+'</li>').join('')+'</ol>'}
+  function customerOrderCard(order){return '<article class="order-card"><div class="order-head"><b>طلب '+esc(order.code)+' — '+esc(order.branch||'')+'</b><span class="status-chip">'+esc(customerStatusLabel(order.status,order.order_type))+'</span></div><div>'+esc(order.summary||'')+' • '+Number(order.total||0).toFixed(0)+' ج.م</div><div class="muted">'+esc(order.order_type||'')+' • '+new Date(order.created_at||Date.now()).toLocaleString('ar-EG')+'</div>'+customerProgress(order)+'</article>'}
+  function drawCustomerOrders(local){const list=document.getElementById('ordersList');if(list)list.innerHTML=local.map(customerOrderCard).join('')||'<p class="muted">لا توجد طلبات مسجلة على هذا الجهاز.</p>'}
+  window.renderOrders = async function() {const local=JSON.parse(sessionStorage.getItem('bz-orders')||'[]');local.forEach(o=>{if(o.code&&!knownCustomerStatuses.has(o.code))knownCustomerStatuses.set(o.code,o.status)});drawCustomerOrders(local);refreshCustomerOrderStatuses()};
 
-  document.getElementById('trackOrderForm')?.addEventListener('submit',async e=>{
-    e.preventDefault(); const out=document.getElementById('trackingResult');
-    out.innerHTML='<p class="muted">جارٍ البحث عن الطلب…</p>';
-    const {data,error}=await db.rpc('track_order_by_code',{p_code:document.getElementById('trackOrderCode').value.trim().toUpperCase()});
-    if(error){out.innerHTML='<p class="muted">تعذر البحث. طبّق تحديث قاعدة البيانات ثم حاول مجدداً.</p>';return;}
-    const order=Array.isArray(data)?data[0]:data;
-    if(!order){out.innerHTML='<p class="muted">لم نعثر على طلب بهذا الرقم.</p>';return;}
-    out.innerHTML='<article class="order-card"><div class="order-head"><b>طلب '+esc(order.code)+' — '+esc(order.branch)+'</b><span class="status-chip">'+esc(order.status)+'</span></div><div>'+esc(order.summary)+' • '+Number(order.total).toFixed(0)+' ج.م</div><div class="muted">'+esc(order.order_type)+' • '+new Date(order.created_at).toLocaleString('ar-EG')+'</div></article>';
-  });
+  function renderTrackedOrder(order){const out=document.getElementById('trackingResult');if(!out)return;out.innerHTML='<article class="order-card"><div class="order-head"><b>طلب '+esc(order.code)+' — '+esc(order.branch)+'</b><span class="status-chip">'+esc(customerStatusLabel(order.status,order.order_type))+'</span></div><div>'+esc(order.summary)+' • '+Number(order.total).toFixed(0)+' ج.م</div><div class="muted">'+esc(order.order_type)+' • '+new Date(order.created_at).toLocaleString('ar-EG')+'</div>'+customerProgress(order)+'</article>'}
+  window.trackCustomerOrder=async function(code){const normalized=String(code||'').trim().toUpperCase();if(!normalized)return;const {data,error}=await db.rpc('track_order_by_code',{p_code:normalized});if(error){const out=document.getElementById('trackingResult');if(out)out.innerHTML='<p class="muted">تعذر البحث عن الطلب. حاول مرة أخرى.</p>';return}const order=Array.isArray(data)?data[0]:data;if(!order){const out=document.getElementById('trackingResult');if(out)out.innerHTML='<p class="muted">لم نعثر على طلب بهذا الرقم.</p>';return}trackedOrderCode=order.code;knownCustomerStatuses.set(order.code,order.status);const local=JSON.parse(sessionStorage.getItem('bz-orders')||'[]');if(!local.some(o=>o.code===order.code)){local.unshift({...order,customer:'طلبك'});sessionStorage.setItem('bz-orders',JSON.stringify(local))}renderTrackedOrder(order);drawCustomerOrders(JSON.parse(sessionStorage.getItem('bz-orders')||'[]'))};
+  window.enableCustomerOrderNotifications=async function(){if(!('Notification'in window)){toast('المتصفح لا يدعم إشعارات الموقع');return}try{const permission=await Notification.requestPermission();if(permission==='granted')toast('تم تفعيل الإشعارات لهذا الجهاز');else toast('لم يتم السماح بإشعارات الموقع')}catch(e){toast('تعذر تفعيل الإشعارات على هذا الجهاز')}};
+  function notifyCustomerOrderStatus(order,status){if(!('Notification'in window)||Notification.permission!=='granted')return;const label=customerStatusLabel(status,order.order_type);try{new Notification('تحديث طلبك '+order.code,{body:label,tag:'bazez-order-'+order.code})}catch(e){console.warn('Customer notification unavailable',e)}}
+  async function refreshCustomerOrderStatuses(){if(pollingCustomerOrders)return;pollingCustomerOrders=true;try{const local=JSON.parse(sessionStorage.getItem('bz-orders')||'[]');let changed=false;await Promise.all(local.filter(o=>o.code&&!['مكتمل','مرفوض'].includes(o.status)).map(async order=>{const {data,error}=await db.rpc('track_order_by_code',{p_code:order.code});if(error)return;const live=Array.isArray(data)?data[0]:data;if(!live)return;const previous=knownCustomerStatuses.has(order.code)?knownCustomerStatuses.get(order.code):order.status;if(previous&&previous!==live.status)notifyCustomerOrderStatus({...order,...live},live.status);knownCustomerStatuses.set(order.code,live.status);if(order.status!==live.status){Object.assign(order,live);changed=true}if(trackedOrderCode===order.code)renderTrackedOrder(live)}));if(changed){sessionStorage.setItem('bz-orders',JSON.stringify(local));if(!document.getElementById('orders')?.classList.contains('hidden'))drawCustomerOrders(local)}}finally{pollingCustomerOrders=false}}
+
+  document.getElementById('trackOrderForm')?.addEventListener('submit',e=>{e.preventDefault();const out=document.getElementById('trackingResult');if(out)out.innerHTML='<p class="muted">جارٍ البحث عن الطلب…</p>';window.trackCustomerOrder(document.getElementById('trackOrderCode').value)});
 
   const baseRenderAdmin=window.renderAdmin;
   window.renderAdmin=async function(){
@@ -141,10 +144,9 @@
     if(waWindow)waWindow.location='https://wa.me/'+whatsapp+'?text='+encodeURIComponent(msg);cart=[];await loadItems();renderCart();toast('تم تسجيل الطلب: '+saved.code);
   };
 
-  ensureOrderUi();
-
   if(logged)subscribeOrderNotifications();
   setInterval(pollForNewOrders,12000);
+  setInterval(refreshCustomerOrderStatuses,12000);
 })();
 
 
