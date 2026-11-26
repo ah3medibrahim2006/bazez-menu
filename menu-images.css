@@ -124,3 +124,10 @@
     gap: 10px;
   }
 }
+
+.admin-option-prices{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;width:100%;margin-top:10px;direction:rtl}
+.admin-option-price{display:grid;align-content:start;gap:7px;padding:9px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.admin-option-price-head{display:flex;align-items:center;justify-content:space-between;gap:6px;font-weight:bold}
+.admin-price-eye{padding:5px 8px;white-space:nowrap}
+.admin-price-input{width:100%;min-width:0}
+.admin-save-prices{grid-column:1/-1;justify-self:start}
