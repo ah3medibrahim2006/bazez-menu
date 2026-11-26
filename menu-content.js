@@ -165,16 +165,26 @@ const MENU_ADDITIONS = [
   { id: 163, cat: 'كريبات', name: 'كفتة', ingredients: 'كفتة + خضروات وموتزاريلا.' },
   { id: 164, cat: 'السندوتشات', name: 'شاورما فراخ', ingredients: 'شاورما فراخ. اختر نوع العيش: فينو أو فرنساوي أو سوري.', startPrice: 100, options: [{ label: 'سوري', price: 100 }, { label: 'فرنساوي', price: 100 }, { label: 'فينو', price: 100 }] },
   { id: 165, cat: 'بيتزا إيطالي', name: 'بيتزا فراخ ايطالي', ingredients: 'فراخ.', options: [{ label: 'S', price: 100 }, { label: 'M', price: 145 }, { label: 'L', price: 210 }] },
-  { id: 166, cat: 'بيتزا شرقي', name: 'فراخ', ingredients: 'فراخ.' },
-  { id: 167, cat: 'فطير حادق', name: 'فطيرة كيري سجق', ingredients: 'سجق مع جبنة كيري.' },
+  { id: 166, cat: 'بيتزا شرقي', name: 'بيتزا فراخ شرقي', ingredients: 'فراخ.', startPrice: 105, options: [{ label: 'S', price: 105 }, { label: 'M', price: 150 }, { label: 'L', price: 215 }] },
+  { id: 167, cat: 'فطير حادق', name: 'فطيرة كيري سجق', ingredients: 'سجق مع جبنة كيري.', startPrice: 170, options: [{ label: 'M', price: 170 }, { label: 'L', price: 250 }] },
   { id: 168, cat: 'الطاسات', name: 'برجر طاسة', ingredients: 'برجر + ميكس جبن.' },
 ].map(item => ({ visible: true, stock: 10, startPrice: 100, options: [{ label: 'عادي', price: 100 }], ...item }));
 
+const MENU_OPTION_FIXES = {
+  'السندوتشات|شاورما لحمة': [{ label: 'فينو', price: 55 }, { label: 'فرنساوي', price: 80 }, { label: 'سوري', price: 100 }],
+  'السندوتشات|شيش': [{ label: 'فينو', price: 50 }, { label: 'فرنساوي', price: 70 }, { label: 'سوري', price: 85 }],
+  'بيتزا شرقي|بيتزا فراخ شرقي': [{ label: 'S', price: 105 }, { label: 'M', price: 150 }, { label: 'L', price: 215 }],
+  'فطير حادق|فطيرة كيري سجق': [{ label: 'M', price: 170 }, { label: 'L', price: 250 }],
+};
+
 function priceMissingMenuItems(list) {
   return list.map(item => {
-    const options = (item.options?.length ? item.options : [{ label: 'عادي', price: item.startPrice }])
+    const name = String(item.name || '').trim();
+    const fixedOptions = MENU_OPTION_FIXES[`${item.cat}|${name}`];
+    const options = fixedOptions || (item.options?.length ? item.options : [{ label: 'عادي', price: item.startPrice }])
       .map(option => ({ ...option, price: option.price == null ? 100 : Number(option.price) }));
-    return { ...item, startPrice: item.startPrice == null ? 100 : Number(item.startPrice), options };
+    const startPrice = fixedOptions ? Math.min(...fixedOptions.map(option => option.price)) : item.startPrice == null ? 100 : Number(item.startPrice);
+    return { ...item, name, startPrice, options };
   });
 }
 
