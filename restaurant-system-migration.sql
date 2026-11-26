@@ -1,6 +1,8 @@
 -- BAZEZ restaurant order workflow migration
 -- Run once in Supabase SQL Editor after the base schema is installed.
 
+alter table public.menu_items add column if not exists stock integer not null default 20 check (stock >= 0);
+
 alter table public.orders add column if not exists items jsonb not null default '[]'::jsonb;
 alter table public.orders add column if not exists stock_restored_at timestamptz;
 drop policy if exists "customers create orders" on public.orders;
