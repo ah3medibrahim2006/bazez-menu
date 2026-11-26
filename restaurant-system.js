@@ -20,7 +20,7 @@
       const nav = panel.querySelector('.tabs');
       const inventory = document.getElementById('inventory');
       const ordersView = document.createElement('div');
-      ordersView.id = 'ordersAdmin';
+      ordersView.id = 'ordersAdmin'; ordersView.className = 'hidden';
       ordersView.innerHTML = '<div class="section-title"><h3>إدارة الطلبات</h3><button class="soft" id="refreshOrders" type="button">تحديث</button></div><div id="adminOrdersList" class="card" aria-live="polite"></div>';
       const kitchenView = document.createElement('div');
       kitchenView.id = 'kitchenAdmin'; kitchenView.className = 'hidden';
@@ -35,8 +35,8 @@
             ['ordersAdmin','kitchenAdmin','inventory','settings'].forEach(view=>{const el=document.getElementById(view);if(el)el.classList.toggle('hidden',view!==id)});
           };
         });
-        nav.querySelector('[data-admin=ordersAdmin]')?.classList.add('active');
-        nav.querySelector('[data-admin=inventory]')?.classList.remove('active');
+        nav.querySelector('[data-admin=inventory]')?.classList.add('active');
+        nav.querySelector('[data-admin=ordersAdmin]')?.classList.remove('active');
         nav.querySelectorAll('[data-admin]').forEach(button=>button.onclick=()=>{nav.querySelectorAll('[data-admin]').forEach(x=>x.classList.toggle('active',x===button));document.getElementById('adminOverview')?.classList.add('hidden');['ordersAdmin','kitchenAdmin','inventory','settings'].forEach(view=>{const el=document.getElementById(view);if(el)el.classList.toggle('hidden',view!==button.dataset.admin)});});
       }
       const refresh=document.getElementById('refreshOrders'); if(refresh)refresh.onclick=()=>renderAdmin();
