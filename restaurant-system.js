@@ -1,5 +1,5 @@
 (() => {
-  const style = document.createElement('style'); style.textContent='.admin-tabs{position:static!important;transform:none!important;width:auto!important;justify-content:flex-start!important;box-shadow:none!important;border:0!important;padding:8px 0!important;background:transparent!important}.admin-tabs .btn{flex:0 1 auto!important;display:inline-flex!important;flex-direction:row!important;width:auto!important} .order-card{padding:12px 0;border-bottom:1px solid var(--line)}.order-card:last-child{border-bottom:0}.order-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.status-chip{display:inline-block;background:var(--soft);color:var(--red);border-radius:20px;padding:4px 9px;font-size:13px}.order-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.order-progress{list-style:none;padding:0;margin:12px 0;display:grid;gap:7px}.order-progress li{display:flex;align-items:center;gap:8px;color:var(--muted)}.order-progress li:before{content:"•";display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#eee;color:#777;font-weight:bold}.order-progress li.done,.order-progress li.current{color:var(--ink);font-weight:bold}.order-progress li.done:before,.order-progress li.current:before{content:"✓";background:#b4232e;color:#fff}.order-rejected{margin:12px 0;padding:10px;border-radius:10px;background:#fff0f0;color:#a31522;font-weight:bold}.notify-customer{margin:10px 0}'; document.head.appendChild(style);
+  const style = document.createElement('style'); style.textContent='.admin-tabs{position:static!important;transform:none!important;width:auto!important;justify-content:flex-start!important;box-shadow:none!important;border:0!important;padding:8px 0!important;background:transparent!important}.admin-tabs .btn{flex:0 1 auto!important;display:inline-flex!important;flex-direction:row!important;width:auto!important} .order-card{padding:12px 0;border-bottom:1px solid var(--line)}.order-card:last-child{border-bottom:0}.order-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.status-chip{display:inline-block;background:var(--soft);color:var(--red);border-radius:20px;padding:4px 9px;font-size:13px}.order-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.order-progress{list-style:none;padding:0;margin:12px 0;display:grid;gap:7px}.order-progress li{display:flex;align-items:center;gap:8px;color:var(--muted)}.order-progress li:before{content:"•";display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#eee;color:#777;font-weight:bold}.order-progress li.done,.order-progress li.current{color:var(--ink);font-weight:bold}.order-progress li.done:before,.order-progress li.current:before{content:"✓";background:#b4232e;color:#fff}.order-rejected{margin:12px 0;padding:10px;border-radius:10px;background:#fff0f0;color:#a31522;font-weight:bold}.notify-customer{margin:10px 0}.order-items{display:grid;gap:6px;margin:9px 0}.order-item{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}.order-category{display:inline-block;background:var(--soft);color:var(--red);border-radius:12px;padding:2px 8px;font-size:13px;font-weight:700}'; document.head.appendChild(style);
   let seenOrderIds = new Set();
   let baselineLoaded = false;
   let pollingOrders = false;
@@ -57,9 +57,34 @@
     };
     return (choices[order.status]||[]).map(([label,next])=>'<button class="soft" type="button" onclick="changeOrderStatus(\''+String(order.id).replace(/'/g,'')+'\',\''+next+'\')">'+label+'</button>').join('');
   }
+  function orderItemLines(order) {
+    const lines=Array.isArray(order.items)?order.items:[];
+    if(!lines.length)return '<div>'+esc(order.summary||'')+'</div>';
+    return '<div class="order-items">'+lines.map(line=>{
+      const menuItem=items.find(item=>Number(item.id)===Number(line.product_id));
+      const category=line.category||menuItem?.cat||menuItem?.category||'قسم غير محدد';
+      const name=line.name||menuItem?.name||'صنف';
+      const option=line.option?' ('+esc(line.option)+')':'';
+      const quantity=Number(line.qty)||0;
+      const lineTotal=Number(line.line_total);
+      return '<div class="order-item"><span class="order-category">'+esc(category)+'</span><span>'+esc(name)+option+' × '+quantity+'</span>'+(Number.isFinite(lineTotal)?'<span class="muted">'+lineTotal.toFixed(0)+' ج.م</span>':'')+'</div>';
+    }).join('')+'</div>';
+  }
+
+  window.orderDetailsText=function(order){
+    const lines=Array.isArray(order.items)?order.items:[];
+    if(!lines.length)return order.summary||'';
+    return lines.map(line=>{
+      const menuItem=items.find(item=>Number(item.id)===Number(line.product_id));
+      const category=line.category||menuItem?.cat||menuItem?.category||'قسم غير محدد';
+      const name=line.name||menuItem?.name||'صنف';
+      return category+': '+name+(line.option?' ('+line.option+')':'')+' × '+(Number(line.qty)||0);
+    }).join('، ');
+  };
+
   function orderCard(order, showActions) {
     const date=new Intl.DateTimeFormat('ar-EG',{timeZone:'Africa/Cairo',hour:'numeric',minute:'2-digit'}).format(new Date(order.created_at));
-    return '<article class="order-card"><div class="order-head"><b>'+esc(order.code)+' — '+esc(order.customer)+'</b><span class="status-chip">'+esc(customerStatusLabel(order.status,order.order_type))+'</span></div><div class="muted">'+esc(order.phone)+' • '+esc(order.branch)+' • '+esc(order.order_type)+' • '+esc(order.payment)+'</div><div>'+esc(order.summary)+'</div><div class="row"><b>'+Number(order.total).toFixed(0)+' ج.م</b><span class="muted">'+date+'</span></div>'+(order.address?'<div class="muted">العنوان: '+esc(order.address)+'</div>':'')+(showActions?'<div class="order-actions">'+statusActions(order)+'</div>':'')+'</article>';
+    return '<article class="order-card"><div class="order-head"><b>'+esc(order.code)+' — '+esc(order.customer)+'</b><span class="status-chip">'+esc(customerStatusLabel(order.status,order.order_type))+'</span></div><div class="muted">'+esc(order.phone)+' • '+esc(order.branch)+' • '+esc(order.order_type)+' • '+esc(order.payment)+'</div>'+orderItemLines(order)+'<div class="row"><b>'+Number(order.total).toFixed(0)+' ج.م</b><span class="muted">'+date+'</span></div>'+(order.address?'<div class="muted">العنوان: '+esc(order.address)+'</div>':'')+(showActions?'<div class="order-actions">'+statusActions(order)+'</div>':'')+'</article>';
   }
 
   function cairoDayKey(value){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(value));const part=key=>parts.find(x=>x.type===key)?.value||'00';return part('year')+'-'+part('month')+'-'+part('day')}
