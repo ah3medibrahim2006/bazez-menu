@@ -1,0 +1,5 @@
+
+/* Remove item photo boxes and controls from menu and admin. */
+.card.product-card .product-photo{display:none!important}
+.card.product-card .product-copy{grid-column:1/-1!important}
+.stock-line.row .admin-image-tools,.stock-line.row .admin-thumb{display:none!important}

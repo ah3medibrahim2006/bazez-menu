@@ -28,7 +28,7 @@ jobs:
       - name: Prepare website files
         run: |
           mkdir -p _site/images
-          cp index.html menu-content.js menu-images.css restaurant-system.js _site/
+          cp index.html menu-app.js menu-content.js menu-images.css page-overrides.css restaurant-system.js styles.css _site/
           cp -R images/. _site/images/
           touch _site/.nojekyll
       - name: Upload website artifact
