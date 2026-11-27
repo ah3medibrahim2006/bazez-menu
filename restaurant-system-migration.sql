@@ -23,6 +23,7 @@ declare
   v_price numeric;
   v_total numeric := 0;
   v_summary text := '';
+  v_category text;
   v_saved_items jsonb := '[]'::jsonb;
   v_order public.orders%rowtype;
 begin
@@ -50,10 +51,11 @@ begin
       limit 1;
     if v_price is null or v_price < 0 then raise exception 'اختيار السعر غير متاح للصنف: %', v_product.name; end if;
     v_total := v_total + (v_price * v_qty);
+    v_category := coalesce(nullif(trim(v_product.category),''),'قسم غير محدد');
     if v_summary <> '' then v_summary := v_summary || '، '; end if;
-    v_summary := v_summary || v_product.name || ' (' || v_label || ') × ' || v_qty::text;
+    v_summary := v_summary || v_category || ': ' || v_product.name || ' (' || v_label || ') × ' || v_qty::text;
     v_saved_items := v_saved_items || jsonb_build_array(jsonb_build_object(
-      'product_id',v_product.id,'name',v_product.name,'option',v_label,
+      'product_id',v_product.id,'category',v_category,'name',v_product.name,'option',v_label,
       'qty',v_qty,'unit_price',v_price,'line_total',v_price*v_qty
     ));
     update public.menu_items set stock=stock-v_qty, updated_at=now() where id=v_product.id;
